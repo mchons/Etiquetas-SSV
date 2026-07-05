@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Etiquetas de Validade</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:linear-gradient(135deg,#0f0f0f 0%,#1a1a1a 50%,#111 100%);min-height:100vh;font-family:'Barlow',sans-serif;color:#f0f0f0;padding-bottom:60px}
+    input,select{font-family:'Barlow',sans-serif}
+    .ctrl:focus{outline:none;border-color:#e63329!important;box-shadow:0 0 0 2px rgba(230,51,41,.25)}
+    .prod-item{cursor:pointer;padding:10px 14px;border-radius:6px;border:1px solid transparent;transition:all .15s}
+    .prod-item:hover{background:rgba(230,51,41,.1);border-color:rgba(230,51,41,.3)}
+    .prod-item.selected{background:rgba(230,51,41,.18);border-color:#e63329}
+    .cat-tag{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#888}
+    .badge{display:inline-block;background:rgba(230,51,41,.2);color:#ff6b63;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700}
+    .badge-green{background:rgba(50,200,100,.15)!important;color:#5dde8a!important}
+    .btn-main{background:#e63329;color:#fff;border:none;padding:14px 32px;font-family:'Barlow',sans-serif;font-weight:900;font-size:16px;letter-spacing:1px;border-radius:6px;cursor:pointer;transition:all .2s;text-transform:uppercase;width:100%}
+    .btn-main:hover{background:#c52a22;transform:translateY(-1px)}
+    .btn-main:disabled{background:#444;color:#666;cursor:not-allowed;transform:none}
+    .scroll-list{max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#e63329 #222}
+    .scroll-list::-webkit-scrollbar{width:4px}
+    .scroll-list::-webkit-scrollbar-track{background:#222}
+    .scroll-list::-webkit-scrollbar-thumb{background:#e63329;border-radius:2px}
+    .section-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;margin-bottom:12px}
+    .card{background:#1e1e1e;border-radius:10px;padding:20px;border:1px solid #2a2a2a}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;margin:0 auto;padding:32px 20px}
+    .col{display:flex;flex-direction:column;gap:20px}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .fade-in{animation:fadeIn .3s ease}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(230,51,41,.4)}50%{box-shadow:0 0 0 8px rgba(230,51,41,0)}}
+    .pulse{animation:pulse 2s infinite}
+    .label-print{width:280px;border:2px solid #111;border-radius:8px;overflow:hidden;font-family:'Barlow',sans-serif}
+    .label-header{background:#e63329;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px}
+    .label-dia{font-size:28px;font-weight:900;letter-spacing:2px}
+    .label-produto{font-size:17px;font-weight:700;line-height:1.2;max-width:160px}
+    .label-body{background:#fff;color:#111;padding:12px 16px}
+    .label-row{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
+    .label-key{font-weight:900;font-size:17px;min-width:22px;color:#e63329}
+    .label-date{font-weight:700;font-size:15px}
+    .lhoralbl{color:#777;font-size:12px;margin-left:6px}
+    .lhoraval{font-weight:700;font-size:14px}
+    .label-divider{border:none;border-top:1px dashed #ddd;margin:8px 0}
+    .lmrow{display:flex;gap:6px;font-size:13px;margin-bottom:4px}
+    .lmkey{font-weight:700;color:#888}
+    .lmval{font-weight:900}
+    .tab-bar{display:flex;gap:4px;background:#111;padding:6px;border-radius:8px}
+    .tab-btn{flex:1;padding:12px;background:transparent;border:none;color:#555;font-family:'Barlow',sans-serif;font-weight:700;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;border-radius:6px;cursor:pointer;transition:all .2s}
+    .tab-btn.active{background:#e63329;color:#fff}
+    .tab-btn:hover:not(.active){background:#222;color:#aaa}
+    @media(max-width:700px){.grid{grid-template-columns:1fr;padding:16px}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef } = React;
+const DIAS_PT   = ["DOM","SEG","TER","QUA","QUI","SEX","SAB"];
+const DIAS_FULL = ["Domingo","Segunda","Terca","Quarta","Quinta","Sexta","Sabado"];
+
+const PRODUTOS_FOOD = [
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Bolo Caseiro de Cenoura e Banana", fornecedor:"Grab & Go / Winner", descongelamento:4,   validade:7    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Ring Donut (Chocoberry e Chocolate)", fornecedor:"Melhor Bocado",   descongelamento:16,  validade:2    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Muffins (Blueberry, Chocolate)",      fornecedor:"Melhor Bocado",   descongelamento:16,  validade:3    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Pao de Queijo (Tradicional e Multigraos)", fornecedor:"Forno de Minas", descongelamento:16, validade:2  },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Pao de Queijo (Tradicional)",         fornecedor:"LSG Sky Chefs",   descongelamento:9,   validade:3    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Mini Pao de Queijo",                  fornecedor:"Forno de Minas",  descongelamento:1.5, validade:2    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Mini Pao de Queijo",                  fornecedor:"LSG Sky Chefs",   descongelamento:5,   validade:3    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Bolo de Limao",                       fornecedor:"LSG Sky Chefs",   descongelamento:12,  validade:3    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Cookie de Baunilha com Gotas de Chocolate", fornecedor:"LSG Sky Chefs", descongelamento:12, validade:4  },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Cuca de Maca (Crumble)",              fornecedor:"LSG Sky Chefs",   descongelamento:12,  validade:4    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Roll de Canela",                      fornecedor:"LSG Sky Chefs",   descongelamento:16,  validade:3    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Fatia Hungara",                       fornecedor:"LSG Sky Chefs",   descongelamento:10,  validade:4    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Bolo Red Velvet",                     fornecedor:"Original Waffle", descongelamento:4,   validade:2    },
+  { categoria:"Pastry Case - Temperatura Ambiente", nome:"Brownie Espresso",                    fornecedor:"Melhor Bocado",   descongelamento:12,  validade:3    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Ciabatta de Frango (Mostarda ou Pesto)",           fornecedor:"LSG Sky Chefs",   descongelamento:24,  validade:4    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Sanduiche Keto",                                    fornecedor:"LSG Sky Chefs",   descongelamento:24,  validade:4    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Croissant Roll",                                    fornecedor:"LSG Sky Chefs",   descongelamento:24,  validade:4    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Torradas com Manteiga (preparado em loja)",         fornecedor:"Starbucks",       descongelamento:null,validade:null },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Torrada Petropolis",                                fornecedor:"LSG Sky Chefs",   descongelamento:12,  validade:4    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Torrada Petropolis",                                fornecedor:"Melhor Bocado",   descongelamento:16,  validade:2    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Empada (Frango com Requeijao e Palmito)",           fornecedor:"Ofner",           descongelamento:12,  validade:2    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Croissant (Frango, Presunto e Queijo e Multigraos)",fornecedor:"Holcasher",       descongelamento:24,  validade:2    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Croissant (Frango, Presunto e Queijo)",             fornecedor:"UAI Salgados",    descongelamento:12,  validade:3    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Croissant Sem Recheio",                             fornecedor:"UAI Salgados",    descongelamento:12,  validade:4    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Mini Coxinha de Frango",                            fornecedor:"Forno de Minas",  descongelamento:12,  validade:1    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Mini Coxinha de Frango",                            fornecedor:"UAI Salgados",    descongelamento:12,  validade:5    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Coxinha Frango",                                    fornecedor:"Qualycon",        descongelamento:12,  validade:2    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Brigadeiros (Tradicional e Gourmet)",               fornecedor:"Gate Gourmet",    descongelamento:3,   validade:5    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Misto Quente / Queijo Quente (preparado em loja)",  fornecedor:"Starbucks",       descongelamento:null,validade:2    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Focaccia Caprese com Pesto",                        fornecedor:"Forneria Biglia", descongelamento:8,   validade:3    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Focaccia com Alecrim e Pesto",                      fornecedor:"LSG Sky Chefs",   descongelamento:24,  validade:2    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Baguete Parmesao com Carne Desfiada",               fornecedor:"Forneria Biglia", descongelamento:8,   validade:3    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Croque Mousieur",                                   fornecedor:"Gate Gourmet",    descongelamento:24,  validade:2    },
+  { categoria:"Pastry Case - Temperatura Refrigerada", nome:"Mini Palha (Tradicional ou Branca)",                fornecedor:"Original Waffle", descongelamento:1,   validade:3    },
+  { categoria:"Food e Pastry Refrigerada Aberta", nome:"Presunto",                  fornecedor:"BRF",       descongelamento:null, validade:5    },
+  { categoria:"Food e Pastry Refrigerada Aberta", nome:"Queijo Mucarela",           fornecedor:"Lactalis",  descongelamento:null, validade:5    },
+  { categoria:"Food e Pastry Refrigerada Aberta", nome:"Requeijao",                 fornecedor:"Lactalis",  descongelamento:null, validade:5    },
+  { categoria:"Food e Pastry Refrigerada Aberta", nome:"Pao de Forma Artesano",     fornecedor:"Bimbo",     descongelamento:null, validade:5    },
+  { categoria:"Food e Pastry Refrigerada Aberta", nome:"Manteiga em Blister",       fornecedor:"Lactalis",  descongelamento:null, validade:null },
+  { categoria:"Food e Pastry Refrigerada Aberta", nome:"Geleia de Morango em Blister", fornecedor:"Bom Sabor", descongelamento:null, validade:null },
+  { categoria:"Food e Pastry Refrigerada Aberta", nome:"Cream Cheese em Blister",   fornecedor:"Lactalis",  descongelamento:null, validade:null },
+];
+
+const PRODUTOS_BAR = [
+  { categoria:"Geral", nome:"Cafe em Grao",                                                                validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Saches de Cha Chai, Preto e Verde - uso do bar",                             validadeNum:30, validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Base para Refreshers (Limao) - Embalagem Original e Jarra 2L (Refrigerado)", validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Base para Refreshers (Frutas Vermelhas, Pitaya e Morango) - Embalagem Original e Jarra 2L (Refrigerado)", validadeNum:5, validadeUnit:"dias" },
+  { categoria:"Geral", nome:"Frutas Liofilizadas (Limao, Amora, Pitaya e Morango)",                       validadeNum:5,  validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Granulado de Blueberry",                                                     validadeNum:5,  validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Xarope de Mascarpone (Ambiente)",                                            validadeNum:30, validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Essencias - Garrafa",                                                        validadeNum:30, validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Essencia de Blueberry",                                                      validadeNum:20, validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Creme de Leite Refrigerado",                                                 validadeNum:3,  validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Limonada Adocada Lemonade - Embalagem Original e Jarra 5L (Refrigerado)",   validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Sucos porcionados no copo (Laranja, Pink Lemonade e Detox)",                 validadeNum:2,  validadeUnit:"dias"    },
+  { categoria:"Geral", nome:"Suco de Laranja e Pink na propria garrafa apos aberto",                      validadeNum:10, validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Chai no Pump (Ambiente)",                                          validadeNum:1,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Chai Refrigerado Embalagem Original (Refrigerado)",                validadeNum:5,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Doce de Leite no Pump (Ambiente)",                                 validadeNum:3,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Doce de Leite na Embalagem Original (Refrigerado)",                validadeNum:3,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Leite Temperatura Ambiente (Todos)",                               validadeNum:20, validadeUnit:"minutos" },
+  { categoria:"Bar Quente/Frio", nome:"Leite Integral Refrigerado",                                       validadeNum:2,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Leite Desnatado Refrigerado",                                      validadeNum:2,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Leite de Amendoa Refrigerado",                                     validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Leite de Coco + Caju Refrigerado",                                 validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Leite Zero Lactose Refrigerado",                                   validadeNum:2,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Leite de Aveia Starbucks Refrigerado",                             validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Leite em po pacote aberto (Ambiente)",                             validadeNum:30, validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Mocha - no Pump (Ambiente)",                                       validadeNum:24, validadeUnit:"horas"   },
+  { categoria:"Bar Quente/Frio", nome:"Mocha Branco no Pump (Ambiente)",                                  validadeNum:10, validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Mocha Branco bag transparente aberto (Ambiente)",                  validadeNum:12, validadeUnit:"dias"    },
+  { categoria:"Bar Quente/Frio", nome:"Cold Brew concentrado - Toddy - Infusao (Ambiente)",               validadeNum:20, validadeUnit:"horas"   },
+  { categoria:"Bar Quente/Frio", nome:"Cold Brew concentrado - Jarra 2L (Refrigerado)",                   validadeNum:5,  validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"Frappuccino Roast no Pump (Ambiente)",                                validadeNum:2,  validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"Base Cafe e Base Creme No Pump (Ambiente)",                           validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"Cha Verde Po Sem Acucar Matcha (Ambiente)",                           validadeNum:14, validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"Calda Morango Embalagem Original/Bisnaga (Refrigerado)",              validadeNum:3,  validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"Base de Brigadeiro no Pump e na Embalagem Original (Ambiente)",       validadeNum:7,  validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"Calda de Maracuja Sem Semente na Embalagem Original (Refrigerado)",   validadeNum:14, validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"Cobertura de Maracuja Com Semente na Embalagem Original (Refrigerado)", validadeNum:14, validadeUnit:"dias"  },
+  { categoria:"Frappuccinos", nome:"Cobertura de Maracuja Com Semente Bisnaga (Refrigerado)",             validadeNum:3,  validadeUnit:"dias"    },
+  { categoria:"Frappuccinos", nome:"ChocoChips apos aberto - Malvalerio",                                 validadeNum:30, validadeUnit:"dias"    },
+  { categoria:"Finalizacoes", nome:"Chantilly Tradicional e Brigadeiro - Preparado Refrigerado",          validadeNum:24, validadeUnit:"horas"   },
+  { categoria:"Finalizacoes", nome:"Creme de Baunilha - Garrafa Termica (Refrigerado)",                   validadeNum:24, validadeUnit:"horas"   },
+  { categoria:"Finalizacoes", nome:"Calda de Chocolate - Cobertura Mocha Bisnaga (Ambiente/Refrigerado)", validadeNum:24, validadeUnit:"horas"   },
+  { categoria:"Finalizacoes", nome:"Calda de Caramelo - Bisnaga (Ambiente)",                              validadeNum:10, validadeUnit:"dias"    },
+  { categoria:"Finalizacoes", nome:"Calda de Caramelo - Embalagem Original",                              validadeNum:12, validadeUnit:"dias"    },
+  { categoria:"Finalizacoes", nome:"Calda de Brigadeiro - Cobertura Brigadeiro Bisnaga (Ambiente/Refrigerado)", validadeNum:7, validadeUnit:"dias" },
+  { categoria:"Finalizacoes", nome:"Chantilly de Mascarpone - Preparado Refrigerado",                     validadeNum:24, validadeUnit:"horas"   },
+  { categoria:"Finalizacoes", nome:"Topping de Cheesecake (Ambiente)",                                    validadeNum:14, validadeUnit:"dias"    },
+  { categoria:"Finalizacoes", nome:"Calda de Doce de Leite",                                              validadeNum:14, validadeUnit:"dias"    },
+  { categoria:"Finalizacoes", nome:"Granulado Callebaut no Recipiente ou Embalagem Original (Ambiente)",  validadeNum:30, validadeUnit:"dias"    },
+  { categoria:"Finalizacoes", nome:"Mini Cookie do Espresso (Ambiente)",                                  validadeNum:5,  validadeUnit:"dias"    },
+  { categoria:"Finalizacoes", nome:"Condimentos do Bar de Condimentos (Acucar com Baunilha, Canela e Chocolate) apos aberto (Ambiente)", validadeNum:30, validadeUnit:"dias" },
+];
+
+const addH   = (d,h) => { const r=new Date(d); r.setTime(r.getTime()+h*3600000); return r; };
+const addD   = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+const addMin = (d,m) => { const r=new Date(d); r.setTime(r.getTime()+m*60000); return r; };
+const calcBar = (d,num,unit) => unit==="dias" ? addD(d,num) : unit==="horas" ? addH(d,num) : addMin(d,num);
+const fmtDate = d => String(d.getDate()).padStart(2,'0')+"/"+String(d.getMonth()+1).padStart(2,'0')+"/"+String(d.getFullYear()).slice(-2);
+const fmtTime = d => String(d.getHours()).padStart(2,'0')+":"+String(d.getMinutes()).padStart(2,'0');
+const fmtPrim = d => d ? String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+String(d.getFullYear()).slice(-2) : "";
+const fmtDesc = h => !h ? "N/A" : !Number.isInteger(h) ? Math.round(h*60)+"min" : h+"h";
+const fmtVB   = (n,u) => u==="minutos" ? n+"min" : u==="horas" ? n+"h" : n+"d";
+const nowLocal = () => { const n=new Date(); return new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16); };
+
+const PS = `*{margin:0;padding:0;box-sizing:border-box}body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;font-family:'Barlow',sans-serif}.label-print{width:280px;border:2px solid #111;border-radius:8px;overflow:hidden}.label-header{background:#e63329;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px}.label-dia{font-size:28px;font-weight:900;letter-spacing:2px}.label-produto{font-size:17px;font-weight:700;line-height:1.2;max-width:160px}.label-body{background:#fff;color:#111;padding:12px 16px}.label-row{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}.label-key{font-weight:900;font-size:17px;min-width:22px;color:#e63329}.label-date{font-weight:700;font-size:15px}.lhoralbl{color:#777;font-size:12px;margin-left:6px}.lhoraval{font-weight:700;font-size:14px}.label-divider{border:none;border-top:1px dashed #ddd;margin:8px 0}.lmrow{display:flex;gap:6px;font-size:13px;margin-bottom:4px}.lmkey{font-weight:700;color:#888}.lmval{font-weight:900}`;
+
+function doPrint(ref) {
+  const w=window.open("","_blank");
+  w.document.write('<!DOCTYPE html><html><head><title>Etiqueta</title><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;700;900&display=swap" rel="stylesheet"><style>'+PS+'</style></head><body>'+ref.current.innerHTML+'</body></html>');
+  w.document.close(); w.focus();
+  setTimeout(()=>{ w.print(); w.close(); },500);
+}
+
+function ProductList({lista, prodIdx, setProdIdx}) {
+  return (
+    <div className="scroll-list" style={{display:"flex",flexDirection:"column",gap:4}}>
+      {lista.map((p,i)=>(
+        <div key={i} className={"prod-item "+(prodIdx===i?"selected":"")} onClick={()=>setProdIdx(i)}>
+          <div style={{fontWeight:700,fontSize:14}}>{p.nome}</div>
+          <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap"}}>
+            <span className="cat-tag">{p.fornecedor||p.categoria}</span>
+            {p.descongelamento && <span className="badge">T {fmtDesc(p.descongelamento)}</span>}
+            {p.validade        && <span className="badge badge-green">V {p.validade}d</span>}
+            {p.validadeNum     && <span className="badge badge-green">V {fmtVB(p.validadeNum,p.validadeUnit)}</span>}
+          </div>
+        </div>
+      ))}
+      {lista.length===0 && <div style={{color:"#555",textAlign:"center",padding:20,fontSize:14}}>Nenhum produto encontrado</div>}
+    </div>
+  );
+}
+
+function FoodTab() {
+  const [catSel,setCatSel]=useState("");
+  const [rawIdx,setRawIdx]=useState(null);
+  const [saida,setSaida]=useState(nowLocal());
+  const [lote,setLote]=useState("");
+  const [valPrim,setValPrim]=useState("");
+  const [busca,setBusca]=useState("");
+  const labelRef=useRef(null);
+  const cats=[...new Set(PRODUTOS_FOOD.map(p=>p.categoria))];
+  const lista=PRODUTOS_FOOD.filter(p=>(!catSel||p.categoria===catSel)&&(!busca||p.nome.toLowerCase().includes(busca.toLowerCase())||p.fornecedor.toLowerCase().includes(busca.toLowerCase())));
+  const prod=rawIdx!==null?lista[rawIdx]:null;
+  const saidaDate=saida?new Date(saida):new Date();
+  const dispDate=prod&&prod.descongelamento?addH(saidaDate,prod.descongelamento):saidaDate;
+  const valDate=prod&&prod.validade?addD(dispDate,prod.validade):null;
+  const dia=valDate?DIAS_PT[valDate.getDay()]:DIAS_PT[saidaDate.getDay()];
+  const vpd=valPrim?new Date(valPrim+"T00:00:00"):null;
+  return (
+    <div className="grid">
+      <div className="col">
+        <div className="card">
+          <div className="section-title">1 - Selecione o produto</div>
+          <input className="ctrl" placeholder="Buscar produto ou fornecedor..." value={busca} onChange={e=>{setBusca(e.target.value);setRawIdx(null);}} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:14,marginBottom:10}}/>
+          <select className="ctrl" value={catSel} onChange={e=>{setCatSel(e.target.value);setRawIdx(null);}} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:13,marginBottom:12,appearance:"none"}}>
+            <option value="">Todas as categorias</option>
+            {cats.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+          <ProductList lista={lista} prodIdx={rawIdx} setProdIdx={setRawIdx}/>
+        </div>
+        <div className="card">
+          <div className="section-title">2 - Data/Hora de saida do freezer</div>
+          <input type="datetime-local" className="ctrl" value={saida} onChange={e=>setSaida(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:15}}/>
+        </div>
+        <div className="card">
+          <div className="section-title">3 - Lote e validade primaria</div>
+          <div style={{marginBottom:12}}>
+            <label style={{fontSize:12,fontWeight:700,letterSpacing:1,color:"#888",display:"block",marginBottom:6}}>LOTE</label>
+            <input className="ctrl" placeholder="Ex: 14L25" value={lote} onChange={e=>setLote(e.target.value.toUpperCase())} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:16,fontWeight:700,letterSpacing:1}}/>
+          </div>
+          <div>
+            <label style={{fontSize:12,fontWeight:700,letterSpacing:1,color:"#888",display:"block",marginBottom:6}}>VALIDADE PRIMARIA</label>
+            <input type="date" className="ctrl" value={valPrim} onChange={e=>setValPrim(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:15}}/>
+          </div>
+        </div>
+      </div>
+      <div className="col">
+        {prod&&(
+          <div className="card fade-in">
+            <div className="section-title">Calculo automatico</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[{key:"S",label:"Saida / Descongelamento",date:saidaDate,color:"#4a9eff"},{key:"D",label:"Disponivel (+"+fmtDesc(prod.descongelamento)+")",date:dispDate,color:"#ffd700"},{key:"V",label:prod.validade?"Validade (+"+prod.validade+" dias)":"Validade (N/A)",date:valDate,color:"#5dde8a"}].map(r=>(
+                <div key={r.key} style={{display:"flex",alignItems:"center",gap:12,background:"#111",borderRadius:8,padding:"10px 14px"}}>
+                  <div style={{fontWeight:900,fontSize:20,color:r.color,minWidth:24}}>{r.key}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:11,color:"#666"}}>{r.label}</div>
+                    <div style={{fontWeight:700,fontSize:15}}>{r.date?DIAS_FULL[r.date.getDay()]+" - "+fmtDate(r.date)+" as "+fmtTime(r.date):"N/A"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="card">
+          <div className="section-title">Preview da etiqueta</div>
+          <div style={{display:"flex",justifyContent:"center"}}>
+            {prod?(
+              <div ref={labelRef} className="fade-in pulse">
+                <div className="label-print">
+                  <div className="label-header"><div className="label-dia">{dia}</div><div className="label-produto">{prod.nome.split(" ").slice(0,3).join(" ")}</div></div>
+                  <div className="label-body">
+                    <div className="label-row"><span className="label-key">S:</span><span className="label-date">{fmtDate(saidaDate)}</span><span className="lhoralbl">Hora:</span><span className="lhoraval">{fmtTime(saidaDate)}</span></div>
+                    <div className="label-row"><span className="label-key">D:</span><span className="label-date">{fmtDate(dispDate)}</span><span className="lhoralbl">Hora:</span><span className="lhoraval">{fmtTime(dispDate)}</span></div>
+                    <div className="label-row"><span className="label-key">V:</span><span className="label-date">{valDate?fmtDate(valDate):"N/A"}</span>{valDate&&<><span className="lhoralbl">Hora:</span><span className="lhoraval">{fmtTime(dispDate)}</span></>}</div>
+                    <hr className="label-divider"/>
+                    <div className="lmrow"><span className="lmkey">Lote:</span><span className="lmval">{lote||"___________"}</span></div>
+                    <div className="lmrow"><span className="lmkey">V. Primaria:</span><span className="lmval">{vpd?fmtPrim(vpd):"___________"}</span></div>
+                  </div>
+                </div>
+              </div>
+            ):(
+              <div style={{color:"#444",textAlign:"center",padding:"40px 20px",fontSize:14}}>Selecione um produto para gerar a etiqueta</div>
+            )}
+          </div>
+        </div>
+        <button className="btn-main" disabled={!prod||!lote} onClick={()=>doPrint(labelRef)}>Imprimir Etiqueta</button>
+        {(!prod||!lote)&&<div style={{textAlign:"center",fontSize:12,color:"#555",marginTop:4}}>{!prod?"Selecione um produto":"Informe o numero do lote"}</div>}
+      </div>
+    </div>
+  );
+}
+
+function BarTab() {
+  const [catSel,setCatSel]=useState("");
+  const [rawIdx,setRawIdx]=useState(null);
+  const [abertura,setAbertura]=useState(nowLocal());
+  const [valPrim,setValPrim]=useState("");
+  const [busca,setBusca]=useState("");
+  const labelRef=useRef(null);
+  const cats=[...new Set(PRODUTOS_BAR.map(p=>p.categoria))];
+  const lista=PRODUTOS_BAR.filter(p=>(!catSel||p.categoria===catSel)&&(!busca||p.nome.toLowerCase().includes(busca.toLowerCase())));
+  const prod=rawIdx!==null?lista[rawIdx]:null;
+  const abDate=abertura?new Date(abertura):new Date();
+  const valDate=prod?calcBar(abDate,prod.validadeNum,prod.validadeUnit):null;
+  const dia=valDate?DIAS_PT[valDate.getDay()]:DIAS_PT[abDate.getDay()];
+  const vpd=valPrim?new Date(valPrim+"T00:00:00"):null;
+  return (
+    <div className="grid">
+      <div className="col">
+        <div className="card">
+          <div className="section-title">1 - Selecione o produto</div>
+          <input className="ctrl" placeholder="Buscar produto..." value={busca} onChange={e=>{setBusca(e.target.value);setRawIdx(null);}} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:14,marginBottom:10}}/>
+          <select className="ctrl" value={catSel} onChange={e=>{setCatSel(e.target.value);setRawIdx(null);}} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:13,marginBottom:12,appearance:"none"}}>
+            <option value="">Todas as categorias</option>
+            {cats.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+          <ProductList lista={lista} prodIdx={rawIdx} setProdIdx={setRawIdx}/>
+        </div>
+        <div className="card">
+          <div className="section-title">2 - Data/Hora de abertura / preparacao</div>
+          <input type="datetime-local" className="ctrl" value={abertura} onChange={e=>setAbertura(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:15}}/>
+        </div>
+        <div className="card">
+          <div className="section-title">3 - Validade primaria (embalagem)</div>
+          <input type="date" className="ctrl" value={valPrim} onChange={e=>setValPrim(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #333",borderRadius:6,padding:"10px 14px",color:"#f0f0f0",fontSize:15}}/>
+        </div>
+      </div>
+      <div className="col">
+        {prod&&(
+          <div className="card fade-in">
+            <div className="section-title">Calculo automatico</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[{key:"A",label:"Abertura / Preparacao",date:abDate,color:"#4a9eff"},{key:"V",label:"Validade (+"+fmtVB(prod.validadeNum,prod.validadeUnit)+")",date:valDate,color:"#5dde8a"}].map(r=>(
+                <div key={r.key} style={{display:"flex",alignItems:"center",gap:12,background:"#111",borderRadius:8,padding:"10px 14px"}}>
+                  <div style={{fontWeight:900,fontSize:20,color:r.color,minWidth:24}}>{r.key}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:11,color:"#666"}}>{r.label}</div>
+                    <div style={{fontWeight:700,fontSize:15}}>{r.date?DIAS_FULL[r.date.getDay()]+" - "+fmtDate(r.date)+" as "+fmtTime(r.date):"N/A"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="card">
+          <div className="section-title">Preview da etiqueta</div>
+          <div style={{display:"flex",justifyContent:"center"}}>
+            {prod?(
+              <div ref={labelRef} className="fade-in pulse">
+                <div className="label-print">
+                  <div className="label-header"><div className="label-dia">{dia}</div><div className="label-produto">{prod.nome.split(" ").slice(0,3).join(" ")}</div></div>
+                  <div className="label-body">
+                    <div className="label-row"><span className="label-key">A:</span><span className="label-date">{fmtDate(abDate)}</span><span className="lhoralbl">Hora:</span><span className="lhoraval">{fmtTime(abDate)}</span></div>
+                    <div className="label-row"><span className="label-key">V:</span><span className="label-date">{valDate?fmtDate(valDate):"N/A"}</span>{valDate&&<><span className="lhoralbl">Hora:</span><span className="lhoraval">{fmtTime(valDate)}</span></>}</div>
+                    <hr className="label-divider"/>
+                    <div className="lmrow"><span className="lmkey">V. Primaria:</span><span className="lmval">{vpd?fmtPrim(vpd):"___________"}</span></div>
+                  </div>
+                </div>
+              </div>
+            ):(
+              <div style={{color:"#444",textAlign:"center",padding:"40px 20px",fontSize:14}}>Selecione um produto para gerar a etiqueta</div>
+            )}
+          </div>
+        </div>
+        <button className="btn-main" disabled={!prod} onClick={()=>doPrint(labelRef)}>Imprimir Etiqueta</button>
+        {!prod&&<div style={{textAlign:"center",fontSize:12,color:"#555",marginTop:4}}>Selecione um produto</div>}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [tab,setTab]=useState("food");
+  return (
+    <div>
+      <div style={{background:"#e63329",padding:"20px 32px",display:"flex",alignItems:"center",gap:16}}>
+        <div style={{width:44,height:44,background:"white",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🏷️</div>
+        <div>
+          <div style={{fontWeight:900,fontSize:22,letterSpacing:1}}>GERADOR DE ETIQUETAS</div>
+          <div style={{fontSize:12,fontWeight:600,letterSpacing:2,opacity:.85}}>DESCONGELAMENTO & VALIDADE</div>
+        </div>
+      </div>
+      <div style={{maxWidth:900,margin:"0 auto",padding:"20px 20px 0"}}>
+        <div className="tab-bar">
+          <button className={"tab-btn "+(tab==="food"?"active":"")} onClick={()=>setTab("food")}>🍞  FOOD</button>
+          <button className={"tab-btn "+(tab==="bar"?"active":"")}  onClick={()=>setTab("bar")}>☕  BAR</button>
+        </div>
+      </div>
+      {tab==="food"?<FoodTab/>:<BarTab/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
